@@ -124,6 +124,77 @@ test('primary button uses correct fill color', async () => {
 });
 ```
 
+## MCP (Model Context Protocol) Usage
+
+The [Figma MCP server](https://github.com/figma/figma-developer-mcp) lets an AI assistant read and manipulate Figma files directly through tool calls.
+
+### Setup
+
+Add the Figma MCP server to your Claude Code / Warp config:
+
+```json
+{
+  "mcpServers": {
+    "figma": {
+      "command": "npx",
+      "args": ["-y", "figma-developer-mcp", "--stdio"],
+      "env": {
+        "FIGMA_ACCESS_TOKEN": "<your_personal_access_token>"
+      }
+    }
+  }
+}
+```
+
+### Available MCP Tools
+
+| Tool | Description |
+|------|-------------|
+| `get_figma_data` | Fetch the full node tree for a file or specific node |
+| `download_figma_images` | Export frames/nodes as PNG, SVG, or PDF |
+
+### Example: Fetch a file's node tree
+
+```
+use_mcp_tool figma get_figma_data \
+  fileKey="ABC123XYZ" \
+  nodeId="1:2"
+```
+
+The response returns the full Figma node JSON — frames, children, fills, typography, etc.
+
+### Example: Export a frame as PNG
+
+```
+use_mcp_tool figma download_figma_images \
+  fileKey="ABC123XYZ" \
+  nodeIds=["1:2"] \
+  localPath="./exports"
+```
+
+Saves the rendered PNG to `./exports/`.
+
+### Example: Visual regression test using MCP + Claude
+
+Ask Claude Code (with the Figma MCP configured):
+
+```
+Download the "Hero" frame from Figma file ABC123XYZ and compare it
+to the baseline at ./snapshots/hero-baseline.png. Flag any layout
+or colour differences.
+```
+
+Claude will call `download_figma_images`, load both images, and report differences — no test harness needed for quick checks.
+
+### Example: Audit design tokens via MCP
+
+```
+Fetch all nodes in Figma file ABC123XYZ that use a fill colour
+outside the approved palette: #0A84FF, #30D158, #FF453A.
+```
+
+Claude calls `get_figma_data`, walks the node tree, and lists violations.
+
 ## Useful Resources
 
 - [Figma REST API docs](https://www.figma.com/developers/api)
